@@ -1,9 +1,10 @@
-import sys
 import math
 import random
-import pygame
+import sys
 from dataclasses import dataclass
-from typing import List, Tuple, Set, Optional
+from typing import List, Optional, Set, Tuple
+
+import pygame
 
 # -----------------------------
 # Config & Constants
@@ -56,21 +57,21 @@ class Maze:
     def _parse(self):
         for y, row in enumerate(self.layout):
             for x, ch in enumerate(row):
-                if ch == '#':
+                if ch == "#":
                     self.walls.add((x, y))
-                elif ch == '.':
+                elif ch == ".":
                     self.pellets.add((x, y))
-                elif ch == 'o':
+                elif ch == "o":
                     self.power_pellets.add((x, y))
-                elif ch == 'P':
+                elif ch == "P":
                     self.player_start = (x, y)
-                elif ch == 'C':
+                elif ch == "C":
                     # Chaser ghost start
                     self.ghost_starts.append((x, y))
-                elif ch == 'R':
+                elif ch == "R":
                     # Random ghost start
                     self.ghost_starts.append((x, y))
-                elif ch == 'H':
+                elif ch == "H":
                     self.house_pos = (x, y)
 
     def in_bounds(self, gx: int, gy: int) -> bool:
@@ -101,12 +102,12 @@ class Maze:
                     pygame.draw.rect(screen, BLACK, rect)
 
         # Pellets
-        for (x, y) in self.pellets:
+        for x, y in self.pellets:
             cx = x * TILE_SIZE + TILE_SIZE // 2
             cy = y * TILE_SIZE + TILE_SIZE // 2
             pygame.draw.circle(screen, WHITE, (cx, cy), 3)
         # Power Pellets
-        for (x, y) in self.power_pellets:
+        for x, y in self.power_pellets:
             cx = x * TILE_SIZE + TILE_SIZE // 2
             cy = y * TILE_SIZE + TILE_SIZE // 2
             pygame.draw.circle(screen, WHITE, (cx, cy), 6, 2)
@@ -115,6 +116,7 @@ class Maze:
 # -----------------------------
 # Utility
 # -----------------------------
+
 
 def grid_to_px(pos: Tuple[float, float]) -> Tuple[int, int]:
     x, y = pos
@@ -172,7 +174,10 @@ class Player:
         self._clamp_inside_walls()
 
     def _is_centered_on_tile(self) -> bool:
-        return abs(self.pos[0] - round(self.pos[0])) < 0.1 and abs(self.pos[1] - round(self.pos[1])) < 0.1
+        return (
+            abs(self.pos[0] - round(self.pos[0])) < 0.1
+            and abs(self.pos[1] - round(self.pos[1])) < 0.1
+        )
 
     def _clamp_inside_walls(self):
         # Prevent slipping into walls by clamping to tile center if near
@@ -244,7 +249,7 @@ class Ghost:
         speed = self._current_speed()
         self.pos[0] += self.dir[0] * speed
         self.pos[1] += self.dir[1] * speed
-        
+
         # If eaten and reached the house tile center, revert to normal
         if self.state == GHOST_EATEN and self._at_center():
             gx, gy = int(round(self.pos[0])), int(round(self.pos[1]))
@@ -263,7 +268,10 @@ class Ghost:
         return self.speed_normal
 
     def _at_center(self) -> bool:
-        return abs(self.pos[0] - round(self.pos[0])) < 0.1 and abs(self.pos[1] - round(self.pos[1])) < 0.1
+        return (
+            abs(self.pos[0] - round(self.pos[0])) < 0.1
+            and abs(self.pos[1] - round(self.pos[1])) < 0.1
+        )
 
     def _valid_neighbors(self, avoid_reverse=True) -> List[Tuple[int, int]]:
         gx, gy = int(round(self.pos[0])), int(round(self.pos[1]))
@@ -288,7 +296,9 @@ class Ghost:
             return (far_x, far_y)
         return player_tile
 
-    def _choose_dir(self, choices: List[Tuple[int, int]], target: Tuple[int, int]) -> Tuple[int, int]:
+    def _choose_dir(
+        self, choices: List[Tuple[int, int]], target: Tuple[int, int]
+    ) -> Tuple[int, int]:
         # Greedy choose direction minimizing Manhattan distance to target
         if not choices:
             return self.dir
@@ -315,7 +325,9 @@ class Ghost:
 
 
 class RandomGhost(Ghost):
-    def _choose_dir(self, choices: List[Tuple[int, int]], target: Tuple[int, int]) -> Tuple[int, int]:
+    def _choose_dir(
+        self, choices: List[Tuple[int, int]], target: Tuple[int, int]
+    ) -> Tuple[int, int]:
         # Pick random direction from choices
         if not choices:
             return self.dir
@@ -334,7 +346,9 @@ class Game:
         pygame.init()
         pygame.display.set_caption("Pacman - OOP Clone")
         self.maze = self._build_maze()
-        self.screen = pygame.display.set_mode((self.maze.width * TILE_SIZE, self.maze.height * TILE_SIZE + 40))
+        self.screen = pygame.display.set_mode(
+            (self.maze.width * TILE_SIZE, self.maze.height * TILE_SIZE + 40)
+        )
         self.clock = pygame.time.Clock()
         self.font = pygame.font.SysFont("arial", 20)
 
@@ -349,7 +363,9 @@ class Game:
             self.ghosts.append(RandomGhost(self.maze, starts[1], colors[1]))
         # Fill remaining as random ghosts if desired
         for i in range(2, len(starts)):
-            self.ghosts.append(RandomGhost(self.maze, starts[i], colors[i % len(colors)]))
+            self.ghosts.append(
+                RandomGhost(self.maze, starts[i], colors[i % len(colors)])
+            )
 
         self.power_timer: int = 0  # frames remaining for vulnerability
         self.power_duration_sec = 7
@@ -439,14 +455,19 @@ class Game:
                         self.running = False
                     else:
                         # Reset positions
-                        self.player.pos = [float(self.maze.player_start[0]), float(self.maze.player_start[1])]
+                        self.player.pos = [
+                            float(self.maze.player_start[0]),
+                            float(self.maze.player_start[1]),
+                        ]
                         for gg in self.ghosts:
                             gg.reset()
                         self.power_timer = 0
 
     def _draw_hud(self):
         hud_height = 40
-        hud_rect = pygame.Rect(0, self.maze.height * TILE_SIZE, self.maze.width * TILE_SIZE, hud_height)
+        hud_rect = pygame.Rect(
+            0, self.maze.height * TILE_SIZE, self.maze.width * TILE_SIZE, hud_height
+        )
         pygame.draw.rect(self.screen, BLACK, hud_rect)
         text = f"Score: {self.player.score}   Lives: {self.player.lives}"
         if self.power_timer > 0:
@@ -475,7 +496,9 @@ class Game:
         end_text = "YOU WIN!" if self.win else "GAME OVER"
         self.screen.fill(BLACK)
         surf = self.font.render(end_text + "  Press any key to exit", True, WHITE)
-        rect = surf.get_rect(center=(self.maze.width * TILE_SIZE // 2, self.maze.height * TILE_SIZE // 2))
+        rect = surf.get_rect(
+            center=(self.maze.width * TILE_SIZE // 2, self.maze.height * TILE_SIZE // 2)
+        )
         self.screen.blit(surf, rect)
         pygame.display.flip()
         # Wait for key
